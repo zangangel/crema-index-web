@@ -80,6 +80,12 @@ legend { padding: 0; margin-bottom: 7px; }
 .manual-metric label { font-size: 13px; font-weight: 700; }
 .manual-metric .input-link { font-size: 13px; }
 .manual-metric .input-help { flex-basis: 100%; }
+.local-fill-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-bottom: 5px; }
+.local-fill-row .date-action { margin-top: 0; }
+.local-fill-row label, .local-fill-row select { font-size: 13px; }
+.local-fill-row select { color: var(--ink); background: #171d24; border: 1px solid #53606b; border-radius: 7px; padding: 4px; }
+#local-fill-controls { margin-bottom: 12px; }
+#local-fill-note { color: var(--green); }
 #korea-controls > label { font-size: 13px; font-weight: 700; }
 #korea-controls > .input-help { margin-top: 7px; }
 .input-help { color: var(--muted); font-size: 13px; line-height: 1.6; }

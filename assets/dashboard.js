@@ -13,9 +13,13 @@ const asOfInput = byId("as-of");
 const dateNote = byId("as-of-note");
 const manualPanel = byId("manual-metrics");
 const metricInputs = Array.from(manualPanel?.querySelectorAll("input") ?? []);
+const localFillControls = byId("local-fill-controls");
+const localFillNote = byId("local-fill-note");
+const handoff = globalThis.cremaHandoff;
 const chartSymbols = {"SPY": "AMEX:SPY", "QQQ": "NASDAQ:QQQ", "TQQQ": "NASDAQ:TQQQ",
   "SOXL": "AMEX:SOXL", "122630.KS": "KRX:122630"};
 const pages = globalThis.cremaPages;
+const localRequest = !pages && handoff?.localRequest();
 const percentMetrics = new Set(["drawdown", "vix_dev", "dist_200"]);
 const dollar = new Intl.NumberFormat("ko-KR", {style: "currency", currency: "USD"});
 const won = new Intl.NumberFormat("ko-KR", {style: "currency", currency: "KRW"});
@@ -250,6 +254,7 @@ function syncControls(values) {
   if (manualPanel) {
     manualPanel.hidden = !manualMetrics;
     manualPanel.disabled = !manualMetrics;
+    if (localFillControls) localFillControls.hidden = !pages;
     if (manualMetrics) syncManualSources(values.get("ticker"), korea);
   }
   if (pages) {
@@ -283,6 +288,8 @@ async function refresh(submitted = false) {
   const payload = {ticker: values.get("ticker"), mode: values.get("mode")};
   const asOf = values.get("as_of");
   if (payload.mode !== "demo" && asOf) payload.as_of = asOf;
+  const returnToPublic = localRequest && payload.mode === "live" && payload.ticker === localRequest.ticker &&
+    (payload.as_of ?? null) === localRequest.day;
   syncControls(values);
   if (payload.mode === "manual" && !submitted) {
     clearResults(payload.ticker, payload.mode, "기준일과 여섯 지표를 입력하세요");
@@ -334,9 +341,18 @@ async function refresh(submitted = false) {
         throw new Error("이전 버전의 로컬 서버에 연결되어 있습니다. 업데이트된 계산기를 열어 다시 시도하세요.");
       }
     }
-    if (pendingRequest === controller) showResults(result);
+    if (pendingRequest !== controller) return;
+    if (returnToPublic) {
+      handoff.returnValues(localRequest, result);
+      return;
+    }
+    showResults(result);
   } catch (error) {
     if (pendingRequest !== controller || error.name === "AbortError") return;
+    if (returnToPublic) {
+      handoff.returnValues(localRequest, null);
+      return;
+    }
     clearResults(payload.ticker, payload.mode, "계산할 수 없음");
     const connectionError = pages ? "계산 자료를 읽을 수 없습니다. 페이지를 새로고침해 주세요."
       : "서버에 연결할 수 없습니다. 웹 계산기를 다시 실행해 주세요.";
@@ -361,6 +377,9 @@ form.addEventListener("change", (event) => {
   if (event.target.name === "ticker") {
     for (const input of metricInputs) input.value = "";
   }
+  if (localFillNote && (["ticker", "mode"].includes(event.target.name) || event.target === asOfInput)) {
+    localFillNote.hidden = true;
+  }
   if (pages && event.target.name === "ticker") {
     byId("price-file").value = "";
     latestMarketDate = undefined;
@@ -374,4 +393,41 @@ useMarketDate.addEventListener("click", () => {
   sentimentDate.value = latestMarketDate;
   syncDateAction();
 });
-refresh();
+
+byId("local-fill")?.addEventListener("click", () => {
+  const ticker = new FormData(form).get("ticker");
+  try {
+    handoff.start(ticker, asOfInput.value, byId("local-port").value);
+  } catch (error) {
+    setMessage(error.message, true);
+  }
+});
+
+const imported = pages && handoff?.takeValues();
+if (imported) {
+  form.elements.ticker.value = imported.ticker;
+  form.elements.mode.value = "manual";
+  asOfInput.value = imported.day ?? "";
+  let count = 0;
+  for (const input of metricInputs) {
+    const value = imported.metrics[input.name];
+    if (Number.isFinite(value)) {
+      input.value = value;
+      count++;
+    }
+  }
+  const fallback = imported.requested && imported.requested !== imported.day ? " · 요청일 " + imported.requested : "";
+  localFillNote.textContent = imported.unavailable
+    ? "로컬판이 이 날짜의 지표를 가져오지 못했습니다. 날짜를 확인하거나 직접 입력해 주세요."
+    : "내 PC에서 " + count + "/6개 항목을 채웠습니다 · 실제 거래일 " + imported.day + fallback
+      + (count < 6 ? " · 빈 항목을 입력해 주세요." : "");
+  localFillNote.hidden = false;
+  refresh(count === metricInputs.length);
+} else {
+  if (localRequest) {
+    form.elements.ticker.value = localRequest.ticker;
+    form.elements.mode.value = "live";
+    asOfInput.value = localRequest.day ?? "";
+  }
+  refresh();
+}
