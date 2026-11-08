@@ -43,7 +43,7 @@ function clearResults(ticker, mode, message) {
   byId("volatility-label").textContent = korea ? "V-KOSPI 200 종가" : "VIX 종가";
   byId("score-max").textContent = " / 100";
   byId("gauge-max").textContent = "100";
-  byId("mode-badge").textContent = mode === "demo" ? "데모" : "실제 일봉";
+  byId("mode-badge").textContent = mode === "demo" ? "데모" : mode === "market" ? "자동 조회" : "실제 일봉";
   byId("threshold").textContent = "—";
   byId("score-status").textContent = message;
   if (dateNote) dateNote.hidden = true;
@@ -190,6 +190,9 @@ function showResults(result) {
     if (result.mode === "live") {
       const fear = result.components.find(({key}) => key === "sentiment").value;
       setMessage(result.sentiment_source + (korea ? " · 국내 심리 " : " · 공포탐욕 ") + fear.toFixed(2) + " · " + result.date);
+    } else if (result.mode === "market") {
+      setMessage("자동 조회 · " + result.date + " · 종가 " + result.price_source
+        + " · 변동성 " + result.volatility_source + " · 심리 " + result.sentiment_source);
     }
   }
   drawComponents(result.components);
@@ -198,19 +201,20 @@ function showResults(result) {
 
 function syncControls(values) {
   const live = values.get("mode") === "live";
+  const demo = values.get("mode") === "demo";
   const korea = values.get("ticker") === koreaTicker;
   const usInputs = live && !korea;
   const csv = values.get("source") === "csv";
   const manual = values.get("source") === "manual";
   if (asOfInput) {
-    byId("as-of-controls").hidden = !live;
-    asOfInput.disabled = !live;
+    byId("as-of-controls").hidden = demo;
+    asOfInput.disabled = demo;
   }
   if (pages) {
     byId("price-controls").hidden = !live;
     byId("us-volatility-row").hidden = korea;
   }
-  byId("demo-help").hidden = live;
+  byId("demo-help").hidden = !demo;
   byId("sentiment-controls").hidden = !usInputs;
   byId("korea-controls").hidden = !live || !korea;
   byId("korea-controls").disabled = !live || !korea;
@@ -236,7 +240,7 @@ async function refresh() {
   const values = new FormData(form);
   const payload = {ticker: values.get("ticker"), mode: values.get("mode")};
   const asOf = values.get("as_of");
-  if (payload.mode === "live" && asOf) payload.as_of = asOf;
+  if (payload.mode !== "demo" && asOf) payload.as_of = asOf;
   syncControls(values);
   submit.disabled = true;
   form.setAttribute("aria-busy", "true");

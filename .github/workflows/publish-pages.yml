@@ -1,0 +1,68 @@
+name: Publish Crema Index
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  schedule:
+    - cron: "37 0 * * 2-6"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: crema-pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    if: github.event_name != 'schedule' || vars.CREMA_MARKET_PUBLISH == 'true'
+    runs-on: ubuntu-latest
+    env:
+      MARKET_PUBLISH: ${{ vars.CREMA_MARKET_PUBLISH }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@v6
+        if: env.MARKET_PUBLISH == 'true'
+        with:
+          repository: zangangel/crema-index
+          ref: main
+          token: ${{ secrets.CREMA_SOURCE_READ_TOKEN }}
+          path: private-source
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        if: env.MARKET_PUBLISH == 'true'
+        with:
+          python-version: "3.14"
+      - name: Build with the authorized daily feed
+        if: env.MARKET_PUBLISH == 'true'
+        working-directory: private-source
+        env:
+          CREMA_MARKET_FEED_URL: ${{ secrets.CREMA_MARKET_FEED_URL }}
+          CREMA_MARKET_FEED_TOKEN: ${{ secrets.CREMA_MARKET_FEED_TOKEN }}
+        run: |
+          python -m pip install -r requirements-tested.txt
+          python -m pages.build "$RUNNER_TEMP/crema-site" --market-feed https
+      - name: Stage the CSV and demo site
+        if: env.MARKET_PUBLISH != 'true'
+        run: |
+          mkdir "$RUNNER_TEMP/crema-site"
+          cp -R index.html guide.html verification.html assets "$RUNNER_TEMP/crema-site/"
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: ${{ runner.temp }}/crema-site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.pages.outputs.page_url }}
+    steps:
+      - id: pages
+        uses: actions/deploy-pages@v4

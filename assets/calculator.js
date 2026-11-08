@@ -75,7 +75,7 @@
     return {value: payload.sentiment, source: "직접 입력", problem: null};
   }
 
-  function calculate(payload) {
+  function calculate(payload, published = false) {
     const {ticker, mode, as_of: asOf} = payload;
     const korea = ticker === koreaTicker;
     if (!Object.hasOwn(thresholds, ticker) || mode !== "live") throw new Error("지원 종목과 데이터 모드를 선택하세요.");
@@ -84,9 +84,16 @@
       throw new Error("계산 기준일을 YYYY-MM-DD로 입력하세요.");
     }
     const prices = readSeries(payload.price_csv, "Close", "ETF 일봉");
-    const dates = Array.from(prices.keys()).filter((date) => !asOf || date <= asOf).sort();
+    const sessions = Array.from(prices.keys()).sort();
+    const cutoff = asOf ?? sessions.at(-1);
+    if (published && parseDay(cutoff) - parseDay(sessions.at(-1)) > 4 * dayMs) {
+      throw new Error("자동 데이터의 마지막 거래일은 " + sessions.at(-1) + "입니다. 날짜를 다시 선택해 주세요.");
+    }
+    const start = published ? dateString(parseDay(cutoff) - (korea ? 730 : 1460) * dayMs) : sessions[0];
+    const dates = sessions.filter((date) => date >= start && date <= cutoff);
     const closes = dates.map((date) => prices.get(date));
-    if (dates.length < 200) throw new Error("선택한 기준일까지 최소 200거래일의 종가를 넣어 주세요.");
+    if (dates.length < 200) throw new Error(published ? "선택한 날짜의 계산에 필요한 가격 이력이 부족합니다."
+      : "선택한 기준일까지 최소 200거래일의 종가를 넣어 주세요.");
     const day = dates.at(-1);
     const price = closes.at(-1);
     const high = dates.reduce((peak, date) => date.slice(0, 4) === day.slice(0, 4) ? Math.max(peak, prices.get(date)) : peak, 0);
@@ -107,7 +114,8 @@
     const alignedVix = dates.slice(-50).map((date) => volatility.get(date));
     const vix = alignedVix.at(-1) ?? null;
     const vixDev = alignedVix.every(Number.isFinite) ? (vix / mean(alignedVix) - 1) * 100 : null;
-    if (vixDev === null && !korea) throw new Error("VIX CSV에 ETF의 최근 50거래일과 날짜가 일치하는 종가를 넣어 주세요.");
+    if (vixDev === null && !korea) throw new Error(published ? day + " 기준의 자동 VIX 데이터가 부족합니다."
+      : "VIX CSV에 ETF의 최근 50거래일과 날짜가 일치하는 종가를 넣어 주세요.");
     const fear = payload.sentiment_csv
       ? {value: readSeries(payload.sentiment_csv, "FearGreed", "심리").get(day) ?? null, source: "CSV 입력", problem: null}
       : manualFear(payload, day);
@@ -139,7 +147,18 @@
   }
 
   async function request(payload, signal) {
-    if (payload.mode !== "demo") return calculate(payload);
+    if (payload.mode === "market") {
+      const response = await fetch("./assets/market-data.json", {signal, cache: "no-cache"});
+      if (!response.ok) throw new Error("자동 조회 데이터를 불러올 수 없습니다.");
+      const data = await response.json();
+      const input = Object.hasOwn(data, payload.ticker) && data[payload.ticker];
+      if (!input) throw new Error("이 종목의 자동 조회 데이터가 없습니다. 실제 일봉 CSV를 이용해 주세요.");
+      const result = calculate({...input, ...payload, mode: "live"}, true);
+      if (result.total === null) throw new Error(result.date + "의 자동 심리 또는 변동성 데이터가 없습니다.");
+      return {...result, mode: "market", sentiment_source: input.sentiment_source,
+        price_source: input.price_source, volatility_source: input.volatility_source};
+    }
+    if (payload.mode === "live") return calculate(payload);
     const response = await fetch("./assets/demo.json", {signal});
     if (!response.ok) throw new Error("데모 데이터를 불러오지 못했습니다.");
     return (await response.json())[payload.ticker];
