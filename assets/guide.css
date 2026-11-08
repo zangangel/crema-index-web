@@ -1,0 +1,23 @@
+.guide-lead { max-width: 730px; color: var(--muted); font-size: 16px; line-height: 1.7; }
+.guide-jump { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.guide-jump a { padding: 6px 10px; border: 1px solid var(--line); border-radius: 7px; font-size: 13px; text-decoration: none; }
+.guide-section { margin-top: 42px; scroll-margin-top: 16px; }
+.guide-section > h2 { margin: 4px 0 13px; font-size: clamp(21px, 3.2vw, 33px); letter-spacing: -.04em; }
+.guide-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.guide-grid-two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.guide-card { padding: 16px 19px; }
+.guide-card h3 { margin: 0; font-size: 18px; }
+.guide-card p, .guide-steps p, .guide-details p { margin-top: 7px; color: var(--muted); font-size: 14px; line-height: 1.65; }
+.guide-number { color: var(--gold); font-size: 24px; }
+.guide-note { margin-top: 10px; color: var(--muted); font-size: 13px; line-height: 1.65; }
+.guide-note a, .guide-card a, .guide-details a { text-underline-offset: 3px; }
+.guide-steps { display: grid; gap: 14px; padding: 18px 20px 18px 42px; }
+.guide-steps li::marker { color: var(--pink); font-weight: 750; }
+.guide-table { padding: 9px 13px; }
+.guide-table th:last-child, .guide-table td:last-child { text-align: left; }
+.guide-details { margin-top: 12px; padding: 14px 18px; }
+.guide-details summary { cursor: pointer; font-weight: 650; }
+@media (max-width: 720px) {
+  .guide-grid, .guide-grid-two { grid-template-columns: 1fr; }
+  .guide-section { margin-top: 32px; }
+}

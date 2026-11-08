@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="영상에 나온 TQQQ 특이점지수를 거래일별 원자료와 대조합니다.">
+  <title>영상 점수 검증 · 크레마지수</title>
+  <link rel="icon" type="image/svg+xml" href="./assets/crema.svg">
+  <link rel="stylesheet" href="./assets/styles.css">
+  <link rel="stylesheet" href="./assets/verification.css">
+  <script src="./assets/verification.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="shell topbar-inner">
+      <a class="brand" href="./" aria-label="크레마지수 계산기 홈">
+        <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M3 16.5h4l4-8 4 6 3-3h3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        CREMA<span> INDEX</span>
+      </a>
+      <nav class="site-nav" aria-label="주 메뉴">
+        <a href="./">지수 계산</a>
+        <a href="./verification.html" aria-current="page">영상 검증</a>
+        <a href="./guide.html">매수 가이드</a>
+      </nav>
+    </div>
+  </header>
+  <main class="shell verification">
+    <section id="score-detail" aria-labelledby="case-title">
+      <header class="slide-title">
+        <div>
+          <p class="slide-eyebrow">그럼 그날은 몇 점이었을까</p>
+          <h1 id="case-title" tabindex="-1">TQQQ 특이점지수 대조</h1>
+        </div>
+        <span class="slide-tag">VIDEO CHECK / TQQQ</span>
+      </header>
+      <p id="verification-status" class="verification-status" role="status">검증 자료를 불러오는 중입니다.</p>
+      <div id="verification-content" hidden>
+        <div class="case-tabs" aria-label="영상 주요 날짜">
+          <button type="button" data-case="2026-10-16">10.16 · 73점</button>
+          <button type="button" data-case="2026-10-09">10.09 · 31점</button>
+          <button type="button" data-case="2026-03-27">03.27 · 95점</button>
+          <button type="button" data-case="2020-03-16">코로나 · 96점</button>
+          <button type="button" data-case="2025-04-04">관세 · 98점</button>
+        </div>
+        <div class="slide-grid">
+          <figure class="video-panel radar-panel">
+            <svg id="radar" viewBox="0 0 440 370" role="img" aria-labelledby="radar-title">
+              <title id="radar-title">계산기 환산 점수 육각형 차트</title>
+              <g id="radar-grid"></g>
+              <g id="radar-shape"></g>
+              <g id="radar-labels"></g>
+            </svg>
+            <figcaption><span id="video-legend" hidden><i class="legend-dot"></i> 영상</span><span><i class="legend-dot calculator-dot"></i> 계산기</span><span id="radar-note"></span></figcaption>
+          </figure>
+          <div class="score-stack">
+            <article class="video-panel compare-panel" aria-live="polite">
+              <p id="case-date" class="case-date"></p>
+              <div class="score-pair">
+                <div><span>영상 표시</span><strong id="video-score"></strong></div>
+                <div><span>계산기</span><strong id="calculated-score"></strong></div>
+              </div>
+              <p id="score-delta" class="comparison-delta"></p>
+              <p id="case-market" class="case-market"></p>
+              <p id="case-fear" class="case-market"></p>
+            </article>
+            <article class="video-panel case-note" id="case-note"></article>
+          </div>
+        </div>
+        <details class="video-panel inputs-detail">
+          <summary>이 날짜의 6개 입력값과 점수</summary>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th scope="col">구성 지표</th><th scope="col">계산기 원값</th><th scope="col">비중</th><th scope="col">영상 환산</th><th scope="col">계산기 환산</th><th scope="col">계산기 기여</th></tr></thead>
+              <tbody id="verification-components"></tbody>
+            </table>
+          </div>
+        </details>
+      </div>
+    </section>
+
+    <section class="slide-section" id="ledger" aria-labelledby="ledger-title" hidden>
+      <header class="slide-title">
+        <div><p class="slide-eyebrow">16년 동안 점수가 90점 이상이었던 매수 사례</p><h2 id="ledger-title">21번의 매수 기록</h2></div>
+        <p class="positive ledger-summary">영상 표 기준 · 1년 뒤 20번 중 15번 수익 · 2년 뒤 18번 중 18번 수익</p>
+      </header>
+      <p id="ledger-verification" class="section-description"></p>
+      <div id="ledger-tables" class="ledger-tables"></div>
+      <p class="section-description">날짜를 누르면 입력값과 육각형 차트를 볼 수 있습니다. 1년·2년 수익률은 영상 표의 수치를 옮겼습니다.</p>
+    </section>
+
+    <section class="slide-section" id="march" aria-labelledby="march-title" hidden>
+      <header class="slide-title">
+        <div><p class="slide-eyebrow">2026년 3월 · 이란 전쟁</p><h2 id="march-title">95점이 찍힌 날, 바닥은 사흘 뒤</h2></div>
+      </header>
+      <div class="march-layout">
+        <aside class="news-stack" aria-label="당시 뉴스">
+          <a class="video-panel news-card" href="https://abc17news.com/money/cnn-business-consumer/2026/03/26/the-war-in-iran-is-scrambling-wall-streets-playbook-for-safe-investing/" target="_blank" rel="noopener">
+            <span class="news-preview"><small>CNN BUSINESS</small><b>Stocks, bonds and gold all fall in market slide</b></span>
+            <span class="news-meta"><strong>이란 전쟁에 주식·채권·금이 함께 하락</strong><small>CNN · 2026.03.26 ↗</small></span>
+          </a>
+          <a class="video-panel news-card" href="https://www.cnn.com/2026/03/27/investing/us-stocks-iran" target="_blank" rel="noopener">
+            <span class="news-preview"><small>CNN BUSINESS</small><b>Dow closes in correction, S&amp;P logs longest weekly losing streak in four years and oil settles at Iran-war highs</b></span>
+            <span class="news-meta"><strong>다우는 조정장, 유가는 전쟁 이후 최고치</strong><small>CNN · 2026.03.27 ↗</small></span>
+          </a>
+        </aside>
+        <article class="video-panel march-chart">
+          <p class="case-date">2026년 3월 27일 · TQQQ</p>
+          <p id="march-caption"></p>
+          <svg id="march-chart" viewBox="0 0 680 270" role="img" aria-labelledby="march-chart-title">
+            <title id="march-chart-title">TQQQ 수정종가와 3월 27일, 3월 30일 표시</title>
+            <g id="march-grid"></g>
+            <g id="march-line"></g>
+            <g id="march-markers"></g>
+          </svg>
+          <p id="march-summary" class="section-description"></p>
+        </article>
+      </div>
+    </section>
+
+    <section id="method-check" class="slide-section video-panel method-check" aria-labelledby="method-title" hidden>
+      <p class="slide-eyebrow">점수가 달라진 이유</p>
+      <h2 id="method-title">같은 날에도 입력 기준에 따라 점수가 달라집니다</h2>
+      <div id="method-findings"></div>
+      <p class="sources">
+        <a href="https://www.youtube.com/watch?v=ziyJWGOOMUQ&amp;t=610s" target="_blank" rel="noopener">영상 계산 프롬프트</a>
+        <a href="https://finance.yahoo.com/quote/TQQQ/history/" target="_blank" rel="noopener">TQQQ 일봉</a>
+        <a href="https://www.cboe.com/tradable-products/vix/vix-historical-data" target="_blank" rel="noopener">Cboe VIX</a>
+        <a href="https://production.dataviz.cnn.io/index/fearandgreed/graphdata/2020-07-14" target="_blank" rel="noopener">CNN 일별 원자료</a>
+      </p>
+      <p id="verified-at" class="section-description"></p>
+    </section>
+    <footer><span>CREMA INDEX</span><span>영상 표시값과 계산값을 날짜별로 대조</span></footer>
+  </main>
+</body>
+</html>
