@@ -11,6 +11,10 @@ const koreaFear = byId("korea-fear");
 const koreaFearDate = byId("korea-fear-date");
 const asOfInput = byId("as-of");
 const dateNote = byId("as-of-note");
+const manualPanel = byId("manual-metrics");
+const metricInputs = Array.from(manualPanel?.querySelectorAll("input") ?? []);
+const chartSymbols = {"SPY": "AMEX:SPY", "QQQ": "NASDAQ:QQQ", "TQQQ": "NASDAQ:TQQQ",
+  "SOXL": "AMEX:SOXL", "122630.KS": "KRX:122630"};
 const pages = globalThis.cremaPages;
 const percentMetrics = new Set(["drawdown", "vix_dev", "dist_200"]);
 const dollar = new Intl.NumberFormat("ko-KR", {style: "currency", currency: "USD"});
@@ -43,7 +47,7 @@ function clearResults(ticker, mode, message) {
   byId("volatility-label").textContent = korea ? "V-KOSPI 200 종가" : "VIX 종가";
   byId("score-max").textContent = " / 100";
   byId("gauge-max").textContent = "100";
-  byId("mode-badge").textContent = mode === "demo" ? "데모" : mode === "market" ? "자동 조회" : "실제 일봉";
+  byId("mode-badge").textContent = {demo: "데모", market: "자동 조회", manual: "지표 직접 입력"}[mode] ?? "실제 일봉";
   byId("threshold").textContent = "—";
   byId("score-status").textContent = message;
   if (dateNote) dateNote.hidden = true;
@@ -150,9 +154,9 @@ function showResults(result) {
     dateNote.hidden = false;
   }
   byId("threshold").textContent = result.threshold === null ? "미설정" : result.threshold + "점";
-  byId("weekly-date").textContent = "이번 계산의 주봉 기준일은 " + result.weekly_date + "입니다.";
-  byId("price").textContent = currency.format(result.price);
-  byId("high").textContent = currency.format(result.high);
+  byId("weekly-date").textContent = result.weekly_date ? "이번 계산의 주봉 기준일은 " + result.weekly_date + "입니다." : "";
+  byId("price").textContent = result.price === null ? "—" : currency.format(result.price);
+  byId("high").textContent = result.high === null ? "—" : currency.format(result.high);
   byId("vix").textContent = result.vix === null ? "—" : result.vix.toFixed(2);
   if (result.mode === "live") {
     latestMarketDate = result.date;
@@ -193,15 +197,45 @@ function showResults(result) {
     } else if (result.mode === "market") {
       setMessage("자동 조회 · " + result.date + " · 종가 " + result.price_source
         + " · 변동성 " + result.volatility_source + " · 심리 " + result.sentiment_source);
+    } else if (result.mode === "manual") {
+      setMessage(result.total.toFixed(2) + "점 · 사용자 입력 6개 항목 · " + result.date);
+      byId("chart-empty").textContent = "직접 입력 모드는 여섯 지표의 점수를 표시합니다.";
     }
   }
   drawComponents(result.components);
   drawChart(result.history, korea);
 }
 
+function syncManualSources(ticker, korea) {
+  const history = new URL("https://finance.yahoo.com/quote/" + encodeURIComponent(ticker) + "/history/");
+  const selectedDate = asOfInput.value;
+  if (selectedDate) {
+    history.searchParams.set("period1", Date.parse(selectedDate.slice(0, 4) + "-01-01") / 1000);
+    history.searchParams.set("period2", Date.parse(selectedDate) / 1000 + 86400);
+  }
+  byId("manual-price-link").href = history.href;
+  for (const link of manualPanel.querySelectorAll(".manual-chart-link")) {
+    link.href = "https://www.tradingview.com/chart/?symbol=" + encodeURIComponent(chartSymbols[ticker])
+      + "&interval=" + link.dataset.interval;
+  }
+  const volatilityLink = byId("manual-volatility-link");
+  volatilityLink.href = korea ? "https://kred.dev/ko/series/KRVKOSPI"
+    : "https://www.cboe.com/tradable-products/vix/vix-historical-data/";
+  volatilityLink.textContent = korea ? "V-KOSPI 200 일별 값 ↗" : "VIX 일별 종가 ↗";
+  byId("manual-volatility-label").textContent = korea ? "3. V-KOSPI 200 이격도 (%)" : "3. VIX 이격도 (%)";
+  byId("manual-krx-hint").hidden = !korea;
+  const fearLink = byId("manual-sentiment-link");
+  fearLink.href = korea ? "https://scoreport.kr/fear-greed" : "https://www.cnn.com/markets/fear-and-greed";
+  fearLink.textContent = korea ? "코스피 참고 지수 ↗" : "CNN 지수 ↗";
+  byId("manual-sentiment-label").textContent = korea ? "6. 국내 시장 심리 (0~100)" : "6. CNN 공포탐욕지수 (0~100)";
+  byId("manual-fear-us").hidden = korea;
+  byId("manual-fear-kr").hidden = !korea;
+}
+
 function syncControls(values) {
   const live = values.get("mode") === "live";
   const demo = values.get("mode") === "demo";
+  const manualMetrics = values.get("mode") === "manual";
   const korea = values.get("ticker") === koreaTicker;
   const usInputs = live && !korea;
   const csv = values.get("source") === "csv";
@@ -209,6 +243,14 @@ function syncControls(values) {
   if (asOfInput) {
     byId("as-of-controls").hidden = demo;
     asOfInput.disabled = demo;
+    asOfInput.required = manualMetrics;
+    byId("as-of-help").textContent = manualMetrics ? "입력한 지표의 거래일을 선택하세요."
+      : "비워 두면 최신 종가를 사용합니다. 종가가 없는 날은 이전 거래일을 사용합니다.";
+  }
+  if (manualPanel) {
+    manualPanel.hidden = !manualMetrics;
+    manualPanel.disabled = !manualMetrics;
+    if (manualMetrics) syncManualSources(values.get("ticker"), korea);
   }
   if (pages) {
     byId("price-controls").hidden = !live;
@@ -233,7 +275,7 @@ async function readUpload(id) {
   return file.text();
 }
 
-async function refresh() {
+async function refresh(submitted = false) {
   pendingRequest?.abort();
   const controller = new AbortController();
   pendingRequest = controller;
@@ -242,6 +284,13 @@ async function refresh() {
   const asOf = values.get("as_of");
   if (payload.mode !== "demo" && asOf) payload.as_of = asOf;
   syncControls(values);
+  if (payload.mode === "manual" && !submitted) {
+    clearResults(payload.ticker, payload.mode, "기준일과 여섯 지표를 입력하세요");
+    setMessage("");
+    submit.disabled = false;
+    form.removeAttribute("aria-busy");
+    return;
+  }
   submit.disabled = true;
   form.setAttribute("aria-busy", "true");
   clearResults(payload.ticker, payload.mode, "계산 중");
@@ -267,7 +316,10 @@ async function refresh() {
       }
     }
     let result;
-    if (pages) {
+    if (payload.mode === "manual") {
+      const metrics = Object.fromEntries(metricInputs.map((input) => [input.name, input.valueAsNumber]));
+      result = globalThis.cremaScoring.manual(payload.ticker, payload.as_of, metrics);
+    } else if (pages) {
       result = await pages.request(payload, controller.signal);
     } else {
       const response = await fetch("/api/crema", {
@@ -299,9 +351,16 @@ async function refresh() {
 
 form.addEventListener("submit", (event) => {
   event.preventDefault();
-  refresh();
+  refresh(true);
 });
 form.addEventListener("change", (event) => {
+  if (manualPanel && !manualPanel.hidden && event.target === asOfInput) {
+    const ticker = new FormData(form).get("ticker");
+    syncManualSources(ticker, ticker === koreaTicker);
+  }
+  if (event.target.name === "ticker") {
+    for (const input of metricInputs) input.value = "";
+  }
   if (pages && event.target.name === "ticker") {
     byId("price-file").value = "";
     latestMarketDate = undefined;

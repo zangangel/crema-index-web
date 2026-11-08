@@ -2,8 +2,8 @@
 
 // Browser equivalent of crema.web.build_result for visitor-provided CSVs.
 (() => {
-  const koreaTicker = "122630.KS";
-  const thresholds = {SPY: 40, QQQ: 60, TQQQ: 50, SOXL: null, [koreaTicker]: null};
+  const scoring = globalThis.cremaScoring;
+  const {koreaTicker, thresholds} = scoring;
   const dayMs = 86400000;
   const mean = (values) => values.reduce((sum, value) => sum + value, 0) / values.length;
   const dateString = (time) => new Date(time).toISOString().slice(0, 10);
@@ -123,23 +123,16 @@
     const weeklyRsi = wilderRsi(Array.from(weekly.values()));
     const dailyRsi = wilderRsi(closes);
     const dist = (price / history.at(-1).average - 1) * 100;
-    const components = [
-      ["drawdown", "연중 고점 대비 낙폭", .30, drawdown, drawdown / 12 * 100],
-      ["rsi_weekly", "주간 RSI", .20, weeklyRsi, (70 - weeklyRsi) / 40 * 100],
-      ["vix_dev", korea ? "V-KOSPI 200 이격도" : "VIX 이격도", .15, vixDev, (vixDev + 10) / 50 * 100],
-      ["dist_200", "200일선 이격도", .15, dist, (12 - dist) / 24 * 100],
-      ["rsi_daily", "일간 RSI", .10, dailyRsi, (70 - dailyRsi) / 40 * 100],
-      ["sentiment", korea ? "국내 시장 심리" : "공포탐욕지수", .10, fear.value, 100 - fear.value],
-    ].map(([key, label, weight, value, raw]) => {
-      const score = value === null ? null : Math.max(0, Math.min(100, raw));
-      return {key, label, weight, value, score, contribution: score === null ? null : score * weight};
-    });
+    const components = scoring.components({
+      drawdown, rsi_weekly: weeklyRsi, vix_dev: vixDev, dist_200: dist,
+      rsi_daily: dailyRsi, sentiment: fear.value,
+    }, korea);
     const available = components.filter(({score}) => score !== null);
     const availableScore = available.reduce((sum, {contribution}) => sum + contribution, 0);
     return {
       mode, ticker, market: korea ? "KR" : "US", date: day, weekly_date: weeklyDate, as_of: asOf ?? null,
       price, high, vix, history, components, threshold: thresholds[ticker],
-      total: available.length === components.length ? Math.round(availableScore * 1e12) / 1e12 : null,
+      total: available.length === components.length ? scoring.total(components) : null,
       available_score: availableScore,
       available_weight: Math.round(available.reduce((sum, {weight}) => sum + weight, 0) * 100),
       sentiment_source: fear.value === null ? null : fear.source, sentiment_problem: fear.problem,

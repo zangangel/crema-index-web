@@ -36,6 +36,7 @@ h1, h2, p { margin: 0; }
 .intro h1 { margin-top: 7px; font-size: clamp(32px, 5vw, 52px); line-height: 1.17; letter-spacing: -.065em; }
 .intro > p:not(.eyebrow) { margin-top: 12px; color: var(--muted); line-height: 1.65; }
 .overview { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 18px; }
+.overview:has(#manual-metrics:not([hidden])) .score-panel { align-self: start; }
 .card, .score-panel { min-width: 0; border: 1px solid var(--line); border-radius: 20px; }
 .card { background: var(--white); padding: 25px 28px; }
 .card h2 { margin-top: 5px; font-size: clamp(20px, 2.3vw, 25px); letter-spacing: -.045em; }
@@ -74,7 +75,11 @@ legend { padding: 0; margin-bottom: 7px; }
 .source-picker input { accent-color: var(--green); }
 .input-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 9px; }
 .input-row, #csv-inputs { margin-top: 10px; }
-.input-row input, #sentiment-file, #korea-volatility { display: block; width: 100%; min-width: 0; margin-top: 5px; padding: 8px 9px; border: 1px solid #53606b; border-radius: 8px; background: #171d24; color: var(--ink); font-size: 14px; }
+.input-row input, .manual-metric input, #sentiment-file, #korea-volatility { display: block; width: 100%; min-width: 0; margin-top: 5px; padding: 8px 9px; border: 1px solid #53606b; border-radius: 8px; background: #171d24; color: var(--ink); font-size: 14px; }
+.manual-metric { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 8px; margin: 12px 0; padding-top: 12px; border-top: 1px solid var(--line); }
+.manual-metric label { font-size: 13px; font-weight: 700; }
+.manual-metric .input-link { font-size: 13px; }
+.manual-metric .input-help { flex-basis: 100%; }
 #korea-controls > label { font-size: 13px; font-weight: 700; }
 #korea-controls > .input-help { margin-top: 7px; }
 .input-help { color: var(--muted); font-size: 13px; line-height: 1.6; }
