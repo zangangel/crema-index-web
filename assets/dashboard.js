@@ -9,6 +9,8 @@ const useMarketDate = byId("use-market-date");
 const koreaTicker = "122630.KS";
 const koreaFear = byId("korea-fear");
 const koreaFearDate = byId("korea-fear-date");
+const asOfInput = byId("as-of");
+const dateNote = byId("as-of-note");
 const pages = globalThis.cremaPages;
 const percentMetrics = new Set(["drawdown", "vix_dev", "dist_200"]);
 const dollar = new Intl.NumberFormat("ko-KR", {style: "currency", currency: "USD"});
@@ -44,6 +46,7 @@ function clearResults(ticker, mode, message) {
   byId("mode-badge").textContent = mode === "demo" ? "데모" : "실제 일봉";
   byId("threshold").textContent = "—";
   byId("score-status").textContent = message;
+  if (dateNote) dateNote.hidden = true;
   byId("gauge-fill").setAttribute("stroke-dasharray", "0 100");
   for (const id of ["total", "market-date", "price", "high", "vix"]) {
     byId(id).textContent = "—";
@@ -142,6 +145,10 @@ function showResults(result) {
   const fearDate = korea ? koreaFearDate : sentimentDate;
   const fearInput = korea ? koreaFear : sentimentValue;
   byId("market-date").textContent = result.date;
+  if (dateNote && result.as_of && result.as_of !== result.date) {
+    dateNote.textContent = "선택한 " + result.as_of + "의 종가가 없어 " + result.date + " 종가로 계산했습니다.";
+    dateNote.hidden = false;
+  }
   byId("threshold").textContent = result.threshold === null ? "미설정" : result.threshold + "점";
   byId("weekly-date").textContent = "이번 계산의 주봉 기준일은 " + result.weekly_date + "입니다.";
   byId("price").textContent = currency.format(result.price);
@@ -195,6 +202,10 @@ function syncControls(values) {
   const usInputs = live && !korea;
   const csv = values.get("source") === "csv";
   const manual = values.get("source") === "manual";
+  if (asOfInput) {
+    byId("as-of-controls").hidden = !live;
+    asOfInput.disabled = !live;
+  }
   if (pages) {
     byId("price-controls").hidden = !live;
     byId("us-volatility-row").hidden = korea;
@@ -224,6 +235,8 @@ async function refresh() {
   pendingRequest = controller;
   const values = new FormData(form);
   const payload = {ticker: values.get("ticker"), mode: values.get("mode")};
+  const asOf = values.get("as_of");
+  if (payload.mode === "live" && asOf) payload.as_of = asOf;
   syncControls(values);
   submit.disabled = true;
   form.setAttribute("aria-busy", "true");

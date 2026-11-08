@@ -7,8 +7,8 @@
   <title>크레마지수 계산기</title>
   <link rel="icon" type="image/svg+xml" href="./assets/crema.svg">
   <link rel="stylesheet" href="./assets/styles.css">
-  <script src="./assets/calculator.js" defer></script>
-  <script src="./assets/dashboard.js" defer></script>
+  <script src="./assets/calculator.js?v=2" defer></script>
+  <script src="./assets/dashboard.js?v=2" defer></script>
 </head>
 <body>
   <header class="topbar">
@@ -55,6 +55,7 @@
           <div><span id="market-label">미국 거래일</span><strong id="market-date">—</strong></div>
           <div><span>종목 기준선</span><strong id="threshold">60점</strong></div>
         </div>
+        <p class="score-status" id="as-of-note" aria-live="polite" hidden></p>
       </section>
 
       <section class="card controls" aria-labelledby="controls-heading">
@@ -79,6 +80,12 @@
             </div>
           </fieldset>
           <p id="demo-help" class="input-help" hidden>데모는 계산 방법을 확인할 수 있는 모의 데이터입니다.</p>
+          <div class="input-row" id="as-of-controls">
+            <label for="as-of">계산 기준일
+              <input id="as-of" name="as_of" type="date" aria-describedby="as-of-help">
+            </label>
+            <p class="input-help" id="as-of-help">비워 두면 최신 종가를 사용합니다. 종가가 없는 날은 이전 거래일을 사용합니다.</p>
+          </div>
           <fieldset id="price-controls" hidden>
             <legend>일봉 CSV · 브라우저에서만 읽습니다</legend>
             <label for="price-file">선택한 ETF 종가 CSV</label>

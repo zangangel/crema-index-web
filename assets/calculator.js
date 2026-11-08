@@ -76,14 +76,17 @@
   }
 
   function calculate(payload) {
-    const {ticker, mode} = payload;
+    const {ticker, mode, as_of: asOf} = payload;
     const korea = ticker === koreaTicker;
     if (!Object.hasOwn(thresholds, ticker) || mode !== "live") throw new Error("지원 종목과 데이터 모드를 선택하세요.");
     if (!payload.price_csv) throw new Error("선택한 종목의 일봉 CSV를 선택해 주세요.");
+    if (asOf !== undefined && !Number.isFinite(parseDay(asOf))) {
+      throw new Error("계산 기준일을 YYYY-MM-DD로 입력하세요.");
+    }
     const prices = readSeries(payload.price_csv, "Close", "ETF 일봉");
-    const dates = Array.from(prices.keys()).sort();
+    const dates = Array.from(prices.keys()).filter((date) => !asOf || date <= asOf).sort();
     const closes = dates.map((date) => prices.get(date));
-    if (dates.length < 200) throw new Error("200일선 계산에 필요한 최소 200거래일의 종가를 넣어 주세요.");
+    if (dates.length < 200) throw new Error("선택한 기준일까지 최소 200거래일의 종가를 넣어 주세요.");
     const day = dates.at(-1);
     const price = closes.at(-1);
     const high = dates.reduce((peak, date) => date.slice(0, 4) === day.slice(0, 4) ? Math.max(peak, prices.get(date)) : peak, 0);
@@ -126,7 +129,7 @@
     const available = components.filter(({score}) => score !== null);
     const availableScore = available.reduce((sum, {contribution}) => sum + contribution, 0);
     return {
-      mode, ticker, market: korea ? "KR" : "US", date: day, weekly_date: weeklyDate,
+      mode, ticker, market: korea ? "KR" : "US", date: day, weekly_date: weeklyDate, as_of: asOf ?? null,
       price, high, vix, history, components, threshold: thresholds[ticker],
       total: available.length === components.length ? Math.round(availableScore * 1e12) / 1e12 : null,
       available_score: availableScore,
