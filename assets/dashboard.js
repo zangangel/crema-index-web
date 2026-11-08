@@ -274,6 +274,9 @@ async function refresh() {
       });
       result = await response.json();
       if (!response.ok) throw new Error(result.error);
+      if (payload.as_of && result.as_of !== payload.as_of) {
+        throw new Error("이전 버전의 로컬 서버에 연결되어 있습니다. 업데이트된 계산기를 열어 다시 시도하세요.");
+      }
     }
     if (pendingRequest === controller) showResults(result);
   } catch (error) {
